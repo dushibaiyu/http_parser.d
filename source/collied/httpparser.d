@@ -6,8 +6,8 @@ import std.stdio;
 import collied.config;
 
 /** ubyte[] 为传过去字段里的位置引用，没有数据拷贝，自己使用的时候注意拷贝数据， 
-	bool 此段数据是否完结，可能只是数据的一部分。
-  */
+ bool 此段数据是否完结，可能只是数据的一部分。
+ */
 alias CallBackData = void delegate(HTTPParser,ubyte[], bool);
 alias CallBackNotify = void delegate(HTTPParser);
 
@@ -90,10 +90,6 @@ public:
 		long status_mark  = uint.max;
 		long maxP =  cast(long)data.length ;
 		long p = 0;
-		/*{ //现在socket的buffer不归GC管，而且D的GC还没有移动功能。不需要
-			import core.memory;
-			GC.setAttr(p,GC.BlkAttr.NO_MOVE);
-		}*/
 		if(http_errno != HTTPParserErrno.HPE_OK){
 			return 0;
 		}
@@ -101,8 +97,8 @@ public:
 			switch (state) {
 				case HTTPParserState.s_body_identity_eof:
 					/* Use of CALLBACK_NOTIFY() here would erroneously return 1 byte read if
-         * we got paused.
-         */
+					 * we got paused.
+					 */
 					mixin(CALLBACK_NOTIFY_NOADVANCE("message_complete"));
 					return 0;
 					
@@ -115,11 +111,11 @@ public:
 				default:
 					//http_errno = HTTPParserErrno.HPE_INVALID_EOF_STATE);
 					http_errno = HTTPParserErrno.HPE_INVALID_EOF_STATE;
-						return 1;
+					return 1;
 			}
 		}
 
-
+		
 		if (state == HTTPParserState.s_header_field)
 			header_field_mark = 0;
 		if (state == HTTPParserState.s_header_value)
@@ -147,20 +143,20 @@ public:
 		for(; p < maxP; ++p){
 			ch= data[p]; 
 			if(state <=  HTTPParserState.s_headers_done) {                                                             
-					nread += 1;                                              
-					if (nread > HTTPConfig.Max_Header_Size) {            
-						http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;                                  
-							goto error;                                                      
-					}                                                                  
+				nread += 1;                                              
+				if (nread > HTTPConfig.Max_Header_Size) {            
+					http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;                                  
+					goto error;                                                      
+				}                                                                  
 			}
 
-
+			
 		reexecute:
 			switch (state) {
 				case HTTPParserState.s_dead:
 					/* this state is used after a 'Connection: close' message
-         * the parser will error out if it reads another message
-         */
+					 * the parser will error out if it reads another message
+					 */
 					if (ch == CR || ch == LF)
 						break;
 					
@@ -202,7 +198,7 @@ public:
 						state = HTTPParserState.s_req_method;
 					}
 					break;
-				
+					
 
 				case HTTPParserState.s_start_res:
 				{
@@ -332,7 +328,7 @@ public:
 					break;
 				}
 
-
+					
 				case HTTPParserState.s_res_status_code:
 				{
 					if (!mixin(IS_NUM("ch"))) {
@@ -405,7 +401,7 @@ public:
 					mixin(STRICT_CHECK("ch != LF"));
 					state = HTTPParserState.s_header_field_start;
 					break;
-			
+					
 				case HTTPParserState.s_start_req:
 				{
 					if (ch == CR || ch == LF)
@@ -775,7 +771,7 @@ public:
 					
 					if (ch == LF) {
 						/* they might be just sending \n instead of \r\n so this would be
-           * the second \n to denote the end of headers*/
+						 * the second \n to denote the end of headers*/
 						state = HTTPParserState.s_headers_almost_done;
 						//goto reexecute;
 						goto reexecute;
@@ -932,7 +928,7 @@ public:
 								
 							default:
 								assert(false ,"Unknown header_state");
-							//	break;
+								//	break;
 						}
 					}
 					
@@ -940,7 +936,7 @@ public:
 					nread += (p - start);                                              
 					if (nread > (HTTPConfig.Max_Header_Size)) {            
 						http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;                                  
-							goto error;                                                      
+						goto error;                                                      
 					}
 					
 					if (p == maxP) {
@@ -972,7 +968,7 @@ public:
 					}
 					goto case;
 					/* FALLTHROUGH */
-						
+					
 				case HTTPParserState.s_header_value_start:
 				{
 					//MARK(header_value);
@@ -1032,7 +1028,7 @@ public:
 					}
 					break;
 				}
-						
+					
 				case HTTPParserState.s_header_value: //BUG，找不到结束
 				{
 					const long start = p;
@@ -1331,7 +1327,7 @@ public:
 					}
 					
 					/* Cannot use chunked encoding and a content-length header together
-           per the HTTP specification. */
+					 per the HTTP specification. */
 					if ((flags & HTTPParserFlags.F_CHUNKED) &&
 						(flags & HTTPParserFlags.F_CONTENTLENGTH)) {
 						http_errno = HTTPParserErrno.HPE_UNEXPECTED_CONTENT_LENGTH;
@@ -1421,10 +1417,10 @@ public:
 						&& content_length != ULLONG_MAX);
 					
 					/* The difference between advancing content_length and p is because
-         * the latter will automaticaly advance on the next loop iteration.
-         * Further, if content_length ends up at 0, we want to see the last
-         * byte again for our message complete callback.
-         */
+					 * the latter will automaticaly advance on the next loop iteration.
+					 * Further, if content_length ends up at 0, we want to see the last
+					 * byte again for our message complete callback.
+					 */
 					//MARK(body);
 
 					if (body_mark == uint.max) {                                                 
@@ -1437,15 +1433,23 @@ public:
 						state = HTTPParserState.s_message_done;
 						
 						/* Mimic CALLBACK_DATA_NOADVANCE() but with one extra byte.
-           *
-           * The alternative to doing this is to wait for the next byte to
-           * trigger the data callback, just as in every other case. The
-           * problem with this is that this makes it difficult for the test
-           * harness to distinguish between complete-on-EOF and
-           * complete-on-length. It's not clear that this distinction is
-           * important for applications, but let's keep it for now.
-           */
-						mixin(CALLBACK_DATA("body"));
+						 *
+						 * The alternative to doing this is to wait for the next byte to
+						 * trigger the data callback, just as in every other case. The
+						 * problem with this is that this makes it difficult for the test
+						 * harness to distinguish between complete-on-EOF and
+						 * complete-on-length. It's not clear that this distinction is
+						 * important for applications, but let's keep it for now.
+						 */
+						if(body_mark != uint.max && _on_body != null){  
+							ubyte[]  _data =  data[body_mark..p + 1];
+							_on_body(this,_data,true);
+							if (!handleIng){
+								http_errno = HTTPParserErrno.HPE_CB_body;
+								return  p + 1;
+							}
+						}
+						body_mark = uint.max;
 						goto reexecute;
 					}
 					
@@ -1563,8 +1567,8 @@ public:
 						&& content_length != ULLONG_MAX);
 					
 					/* See the explanation in s_body_identity for why the content
-         * length and data pointers are managed this way.
-         */
+					 * length and data pointers are managed this way.
+					 */
 					//MARK(body);
 					if (body_mark == uint.max) {                                                 
 						body_mark = p;                                                  
@@ -1639,10 +1643,10 @@ private:
 	HTTPMethod method; /* requests only */
 	HTTPParserErrno http_errno = HTTPParserErrno.HPE_OK;
 	/* 1 = Upgrade header was present and the parser has exited because of that.
-   * 0 = No upgrade header present.
-   * Should be checked when http_parser_execute() returns in addition to
-   * error checking.
-   */
+	 * 0 = No upgrade header present.
+	 * Should be checked when http_parser_execute() returns in addition to
+	 * error checking.
+	 */
 	bool upgrade;
 
 	bool _isHandle = false;
@@ -1650,7 +1654,7 @@ private:
 	bool _skipBody = false;
 	
 protected:
-        @property type(HTTPParserType ty){ _type = ty;}
+	@property type(HTTPParserType ty){ _type = ty;}
 	bool http_message_needs_eof ()
 	{
 		if (type == HTTPParserType.HTTP_REQUEST) {
@@ -1705,8 +1709,8 @@ protected:
 		switch (s) {
 			case HTTPParserState.s_req_spaces_before_url:
 				/* Proxied requests are followed by scheme of an absolute URI (alpha).
-       * All methods except CONNECT are followed by '/' or '*'.
-       */
+				 * All methods except CONNECT are followed by '/' or '*'.
+				 */
 				
 				if (ch == '/' || ch == '*') {
 					return HTTPParserState.s_req_path;
@@ -1855,61 +1859,61 @@ protected:
 
 
 private :
-	string IS_USERINFO_CHAR(string c){
-		return "( " ~ IS_ALPHA(c) ~ " || " ~ IS_NUM(c) ~ " || " ~ c ~ " == '%' || " ~ c ~ " == ';' || " ~c ~ " == ':' || " ~ c ~" == '&' || " ~ c ~ " == '=' ||  " ~ c ~ " == '+' || " ~ c ~ " == '$' || " ~ c ~ " == ','"
-			~ c ~ " == '-' || '_' == " ~ c ~ "|| '.' == " ~ c ~ "|| '!' == " ~ c ~ "|| '~' == " ~ c ~ "|| '*' == " ~ c ~ "|| '\'' == " ~ c ~ "|| '(' == " ~ c ~ "|| ')' == " ~ c ~ ")"; 
-	}
-	
-	bool IS_USERINFO_CHAR2(ubyte c){
-		bool alpha =  mixin(IS_ALPHA("c"));
-		bool sum   =  mixin(IS_NUM("c")); 
-		bool b1 = (c == '%' ||  c  == ';' || c  == ':' ||  c == '&' ||  c == '=' || c  == '+' ||  c  == '$' ||  c  == ',');
-		bool b2 = (c == '-' || '_' == c || '.' == c  || '!' ==  c  || '~' == c  || '*' ==  c  || '\'' ==  c || '(' ==  c || ')' ==  c  ); 
-		return (b2 || b1 || sum || alpha);
-	}
-	
-	string STRICT_CHECK(string cond) {  
-		string code = "if (";
-		code = code ~ cond ~ ") {                                                   
+string IS_USERINFO_CHAR(string c){
+	return "( " ~ IS_ALPHA(c) ~ " || " ~ IS_NUM(c) ~ " || " ~ c ~ " == '%' || " ~ c ~ " == ';' || " ~c ~ " == ':' || " ~ c ~" == '&' || " ~ c ~ " == '=' ||  " ~ c ~ " == '+' || " ~ c ~ " == '$' || " ~ c ~ " == ','"
+		~ c ~ " == '-' || '_' == " ~ c ~ "|| '.' == " ~ c ~ "|| '!' == " ~ c ~ "|| '~' == " ~ c ~ "|| '*' == " ~ c ~ "|| '\'' == " ~ c ~ "|| '(' == " ~ c ~ "|| ')' == " ~ c ~ ")"; 
+}
+
+bool IS_USERINFO_CHAR2(ubyte c){
+	bool alpha =  mixin(IS_ALPHA("c"));
+	bool sum   =  mixin(IS_NUM("c")); 
+	bool b1 = (c == '%' ||  c  == ';' || c  == ':' ||  c == '&' ||  c == '=' || c  == '+' ||  c  == '$' ||  c  == ',');
+	bool b2 = (c == '-' || '_' == c || '.' == c  || '!' ==  c  || '~' == c  || '*' ==  c  || '\'' ==  c || '(' ==  c || ')' ==  c  ); 
+	return (b2 || b1 || sum || alpha);
+}
+
+string STRICT_CHECK(string cond) {  
+	string code = "if (";
+	code = code ~ cond ~ ") {                                                   
 			http_errno = HTTPParserErrno.HPE_STRICT;                                     
 			goto error;                                           
 		}  ";
-		return code;
-	} 
-	
-	//	string IS_MARK(string c) { return "(" ~ c ~ " == '-' || " ~ c ~ " == '_' || "~ c ~ " == '.' || " ~ c ~ " == '!' || " ~ c ~ " == '~' ||  " ~ c ~ " == '*' ||  " ~ c ~ " == '\'' || " ~ c ~ " == '(' || " ~ c ~ " == ')')";}
-	string IS_NUM(string c){ return  "("~ c ~ " >= '0' &&  " ~ c ~ "  <= '9')";}
-	string IS_ALPHA(string c) { return  "((" ~ c  ~ "| 0x20) >= 'a' && (" ~ c ~ " | 0x20) <= 'z')";}
-	
-	/*	bool BIT_AT(ubyte[32] a, ubyte i) {                                                
-		return (!!(cast(uint) (a[cast(uint) (i) >> 3] )&                 
-				(1 << (cast(uint)i & 7))));}
-	bool IS_URL_CHAR(ubyte c) {return (BIT_AT(normal_url_char, c));} */
-	
-	string IS_URL_CHAR(string c) {
-		return "(!!(cast(uint) (normal_url_char[cast(uint) ("~ c ~") >> 3] ) &                  
+	return code;
+} 
+
+//	string IS_MARK(string c) { return "(" ~ c ~ " == '-' || " ~ c ~ " == '_' || "~ c ~ " == '.' || " ~ c ~ " == '!' || " ~ c ~ " == '~' ||  " ~ c ~ " == '*' ||  " ~ c ~ " == '\'' || " ~ c ~ " == '(' || " ~ c ~ " == ')')";}
+string IS_NUM(string c){ return  "("~ c ~ " >= '0' &&  " ~ c ~ "  <= '9')";}
+string IS_ALPHA(string c) { return  "((" ~ c  ~ "| 0x20) >= 'a' && (" ~ c ~ " | 0x20) <= 'z')";}
+
+/*	bool BIT_AT(ubyte[32] a, ubyte i) {                                                
+ return (!!(cast(uint) (a[cast(uint) (i) >> 3] )&                 
+ (1 << (cast(uint)i & 7))));}
+ bool IS_URL_CHAR(ubyte c) {return (BIT_AT(normal_url_char, c));} */
+
+string IS_URL_CHAR(string c) {
+	return "(!!(cast(uint) (normal_url_char[cast(uint) ("~ c ~") >> 3] ) &                  
 				(1 << (cast(uint)" ~ c ~ " & 7))))";
-	}
-	
-	enum NEW_MESSAGE = "http_should_keep_alive() ? (type == HTTPParserType.HTTP_REQUEST ? HTTPParserState.s_start_req : HTTPParserState.s_start_res) : HTTPParserState.s_dead";
-	string CALLBACK_NOTIFY(string code){
-		string _s = " {if (_on_" ~ code ~" != null){
+}
+
+enum NEW_MESSAGE = "http_should_keep_alive() ? (type == HTTPParserType.HTTP_REQUEST ? HTTPParserState.s_start_req : HTTPParserState.s_start_res) : HTTPParserState.s_dead";
+string CALLBACK_NOTIFY(string code){
+	string _s = " {if (_on_" ~ code ~" != null){
                _on_" ~ code ~"(this); if(!handleIng){
                 http_errno = HTTPParserErrno.HPE_CB_" ~ code ~";
                 return  p + 1;}} }";
-		return _s;
-	}
-	
-	string CALLBACK_NOTIFY_NOADVANCE(string code){
-		string _s = " {if (_on_" ~ code ~" != null){
+	return _s;
+}
+
+string CALLBACK_NOTIFY_NOADVANCE(string code){
+	string _s = " {if (_on_" ~ code ~" != null){
 	               _on_" ~ code ~"(this); if(!handleIng){
 	                http_errno = HTTPParserErrno.HPE_CB_" ~ code ~";
 	                return  p;} }}";
-		return _s;
-	}
-	
-	
-	string  CALLBACK_DATA(string code){
+	return _s;
+}
+
+
+string  CALLBACK_DATA(string code){
 	string _s = "{ if("~code ~ "_mark != uint.max && _on_" ~ code ~" != null){
                 ulong len = (p - "~code ~ "_mark) ;
                 
@@ -1920,10 +1924,10 @@ private :
                 if (!handleIng){
                     http_errno = HTTPParserErrno.HPE_CB_" ~ code ~";
                     return  p + 1;}} }" ~ code ~ "_mark = uint.max;}";
-		return _s;
-	}
-	
-	string CALLBACK_DATA_NOADVANCE(string code){
+	return _s;
+}
+
+string CALLBACK_DATA_NOADVANCE(string code){
 	string _s = "{ if("~code ~ "_mark != uint.max && _on_" ~ code ~" != null){
                 ulong len = (p - "~code ~ "_mark) ;
                 if(len > 0) {  
@@ -1933,14 +1937,12 @@ private :
                 if (!handleIng){
                     http_errno = HTTPParserErrno.HPE_CB_" ~ code ~";
                 return  p;} }}" ~ code ~ "_mark = uint.max;}";
-		return _s;
-	}
-	
-	
+	return _s;
+}
+
+
 unittest{
-        import std.functional;
-	import collied.httpparser;
-	import std.stdio;
+	import std.functional;
 
 	void on_message_begin(HTTPParser)
 	{
@@ -2015,8 +2017,8 @@ unittest{
 		writeln(" ");
 	}
 
-	string data ="GET /test HTTP/1.1\r\nUser-Agent: curl/7.18.0 (i486-pc-linux-gnu) libcurl/7.18.0 OpenSSL/0.9.8g zlib/1.2.3.3 libidn/1.1\r\nHo";
-	string data2 = "st: 0.0.0.0=5000\r\nAccept: */*\r\n\r\n";
+	string data ="GET /test HTTP/1.1\r\nUser-Agent: curl/7.18.0 (i486-pc-linux-gnu) libcurl/7.18.0 OpenSSL/0.9.8g zlib/1.2.3.3 libidn/1.1\r\nHost: 0.0.0";
+	string data2 = ".0=5000\r\nAccept: */*\r\n\r\n";
 	HTTPParser par = new HTTPParser();
 	par.onMessageBegin = toDelegate(&on_message_begin);
 	par.onMessageComplete =  toDelegate(&on_message_complete);
@@ -2038,10 +2040,10 @@ unittest{
 		writeln("\t error ! ", par.errorString);
 		writeln("\tHTTPMethod is = ",par.methodString);
 	}
-	par.rest(HTTPParserType.HTTP_BOTH);
+	par.rest();
 	data = "POST /post_chunked_all_your_base HTTP/1.1\r\nHost:0.0.0.0=5000\r\nTransfer-Encoding:chunked\r\n\r\n5\r\nhello\r\n";
 	
-        data2 = "0\r\n\r\n";
+	data2 = "0\r\n\r\n";
 
 	len = par.httpParserExecute(cast(ubyte[])data);
 	if(data.length != len){
@@ -2058,4 +2060,3 @@ unittest{
 		writeln("erro!!!!!");
 	}
 }
-	
