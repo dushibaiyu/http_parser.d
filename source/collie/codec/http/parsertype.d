@@ -1,3 +1,13 @@
+/*
+ * Collie - An asynchronous event-driven network framework using Dlang development
+ *
+ * Copyright (C) 2015-2016  Shanghai Putao Technology Co., Ltd 
+ *
+ * Developer: putao's Dlang team
+ *
+ * Licensed under the Apache-2.0 License.
+ *
+ */
 module collie.codec.http.parsertype;
 
 enum HTTPParserType
@@ -5,7 +15,7 @@ enum HTTPParserType
     HTTP_REQUEST,
     HTTP_RESPONSE,
     HTTP_BOTH
-};
+}
 
 enum HTTPMethod
 {
@@ -92,14 +102,13 @@ enum HTTPParserErrno
     HPE_STRICT = 30, // "strict mode assertion failed")                         \
     HPE_PAUSED = 31, //"parser is paused")                                     \
     HPE_UNKNOWN = 32 //"an unknown error occurred")
-};
+}
 
 package:
 
 enum CR = '\r';
 enum LF = '\n';
 
-//TODO
 enum ubyte[] PROXY_CONNECTION = cast(ubyte[]) "proxy-connection";
 enum ubyte[] CONNECTION = cast(ubyte[]) "connection";
 enum ubyte[] CONTENT_LENGTH = cast(ubyte[]) "content-length";
@@ -119,9 +128,8 @@ __gshared static const string[34] method_strings = [
     "UNLOCK", "BIND", "REBIND", "UNBIND", "ACL", /* subversion */
     "REPORT", "MKACTIVITY",
     "CHECKOUT", "MERGE", /* upnp */
-    "MSEARCH", "NOTIFY", "SUBSCRIBE" "UNSUBSCRIBE", /* RFC-5789 */
-    "PATCH",
-    "PURGE", /* CalDAV */
+    "MSEARCH", "NOTIFY", "SUBSCRIBE", "UNSUBSCRIBE", /* RFC-5789 */
+    "PATCH", "PURGE", /* CalDAV */
     "MKCALENDAR", /* RFC-2068, section 19.6.1.2 */
     "LINK", "UNLINK", /* 无效的 */
     "INVAILD"
@@ -186,7 +194,7 @@ enum HTTPParserFlags
     F_SKIPBODY = 1 << 6,
     F_CONTENTLENGTH = 1 << 7,
     F_ZERO = 0
-};
+}
 
 enum HTTPParserURLFields
 {
@@ -198,7 +206,7 @@ enum HTTPParserURLFields
     UF_FRAGMENT = 5,
     UF_USERINFO = 6,
     UF_MAX = 7
-};
+}
 
 __gshared static const char[256] tokens = [ /*   0 nul    1 soh    2 stx    3 etx    4 eot    5 enq    6 ack    7 bel  */
 0, 0, 0, 0, 0, 0, 0, 0, /*   8 bs     9 ht    10 nl    11 vt    12 np    13 cr    14 so    15 si   */
@@ -234,6 +242,7 @@ __gshared static const byte[256] unhex = [-1, -1, -1, -1, -1, -1, -1,
 
 version (HTTP_PARSER_STRICT)
 {
+    pragma(inline,true)
     ubyte T(ubyte v)
     {
         return 0;
@@ -241,6 +250,7 @@ version (HTTP_PARSER_STRICT)
 }
 else
 {
+    pragma(inline,true)
     ubyte T(ubyte v)
     {
         return v;
@@ -336,7 +346,7 @@ enum HTTPParserState
     s_body_identity,
     s_body_identity_eof,
     s_message_done
-};
+}
 
 enum HTTPParserHeaderstates
 {
@@ -363,7 +373,7 @@ enum HTTPParserHeaderstates
     h_connection_keep_alive,
     h_connection_close,
     h_connection_upgrade
-};
+}
 
 enum HTTPParserHostState
 {
@@ -379,4 +389,4 @@ enum HTTPParserHostState
     s_http_host_v6_zone,
     s_http_host_port_start,
     s_http_host_port
-};
+}

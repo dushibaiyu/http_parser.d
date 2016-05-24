@@ -1,7 +1,16 @@
+/*
+ * Collie - An asynchronous event-driven network framework using Dlang development
+ *
+ * Copyright (C) 2015-2016  Shanghai Putao Technology Co., Ltd 
+ *
+ * Developer: putao's Dlang team
+ *
+ * Licensed under the Apache-2.0 License.
+ *
+ */
 module collie.codec.http.parser;
 
 public import collie.codec.http.parsertype;
-import collie.codec.http.config;
 
 /** ubyte[] 为传过去字段里的位置引用，没有数据拷贝，自己使用的时候注意拷贝数据， 
  bool 此段数据是否完结，可能只是数据的一部分。
@@ -11,130 +20,160 @@ alias CallBackNotify = void delegate(HTTPParser);
 
 final class HTTPParser
 {
-    this(HTTPParserType ty = HTTPParserType.HTTP_BOTH)
+    this(HTTPParserType ty = HTTPParserType.HTTP_BOTH, uint maxHeaderSize = 4096)
     {
         rest(ty);
+        _maxHeaderSize = maxHeaderSize;
     }
 
+    pragma(inline,true)
     @property type()
     {
         return _type;
     }
 
+    pragma(inline,true)
     @property isUpgrade()
     {
         return upgrade;
     }
 
+    pragma(inline,true)
     @property contentLength()
     {
         return content_length;
     }
 
+    pragma(inline,true)
     @property isChunked()
     {
         return (flags & HTTPParserFlags.F_CHUNKED) == 0 ? false : true;
     }
     //@property status() {return status_code;}
+    pragma(inline,true)
     @property error()
     {
         return http_errno;
     }
 
+    pragma(inline,true)
     @property errorString()
     {
         return error_string[http_errno];
     }
 
+    pragma(inline,true)
     @property methodCode()
     {
         return method;
     }
 
+    pragma(inline,true)
     @property methodString()
     {
         return method_strings[method];
     }
 
+    pragma(inline,true)
     @property major()
     {
         return http_major;
-    } //版本号首位
+    }
+
+    //版本号首位
+    pragma(inline,true)
     @property minor()
     {
         return http_minor;
-    } //版本号末尾
+    }
+
+    //版本号末尾
+    pragma(inline,true)
     @property handleIng()
     {
         return _isHandle;
     }
 
+    pragma(inline)
     @property handleIng(bool handle)
     {
         _isHandle = handle;
     }
 
+    pragma(inline,true)
     @property skipBody()
     {
         return _skipBody;
     }
 
+    pragma(inline)
     @property skipBody(bool skip)
     {
         return _skipBody = skip;
     }
 
     /** 回调函数指定 */
+    pragma(inline)
     @property onMessageBegin(CallBackNotify cback)
     {
         _on_message_begin = cback;
     }
 
+    pragma(inline)
     @property onMessageComplete(CallBackNotify cback)
     {
         _on_message_complete = cback;
     }
 
+    pragma(inline)
     @property onHeaderComplete(CallBackNotify cback)
     {
         _on_headers_complete = cback;
     }
 
+    pragma(inline)
     @property onChunkHeader(CallBackNotify cback)
     {
         _on_chunk_header = cback;
     }
 
+    pragma(inline)
     @property onChunkComplete(CallBackNotify cback)
     {
         _on_chunk_complete = cback;
     }
 
+    pragma(inline)
     @property onUrl(CallBackData cback)
     {
         _on_url = cback;
     }
 
+    pragma(inline)
     @property onStatus(CallBackData cback)
     {
         _on_status = cback;
     }
 
+    pragma(inline)
     @property onHeaderField(CallBackData cback)
     {
         _on_header_field = cback;
     }
 
+    pragma(inline)
     @property onHeaderValue(CallBackData cback)
     {
         _on_header_value = cback;
     }
 
+    pragma(inline)
     @property onBody(CallBackData cback)
     {
         _on_body = cback;
     }
 
+    pragma(inline)
     void rest(HTTPParserType ty)
     {
         type = ty;
@@ -169,6 +208,7 @@ protected:
 
 public:
 
+    pragma(inline)
     bool bodyIsFinal()
     {
         return state == HTTPParserState.s_message_done;
@@ -248,7 +288,7 @@ public:
             if (state <= HTTPParserState.s_headers_done)
             {
                 nread += 1;
-                if (nread > HTTPConfig.MaxHeaderSize)
+                if (nread > _maxHeaderSize)
                 {
                     http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;
                     goto error;
@@ -800,7 +840,7 @@ public:
                         state = HTTPParserState.s_req_server_start;
                     }
 
-                    state = parse_url_char(state, ch);
+                    state = parseURLchar(state, ch);
                     if (state == HTTPParserState.s_dead)
                     {
                         http_errno = HTTPParserErrno.HPE_INVALID_URL;
@@ -824,7 +864,7 @@ public:
                         http_errno = HTTPParserErrno.HPE_INVALID_URL;
                         goto error;
                     default:
-                        state = parse_url_char(state, ch);
+                        state = parseURLchar(state, ch);
                         if (state == HTTPParserState.s_dead)
                         {
                             http_errno = HTTPParserErrno.HPE_INVALID_URL;
@@ -858,7 +898,7 @@ public:
                         mixin(CALLBACK_DATA("url"));
                         break;
                     default:
-                        state = parse_url_char(state, ch);
+                        state = parseURLchar(state, ch);
                         if (state == HTTPParserState.s_dead)
                         {
                             http_errno = HTTPParserErrno.HPE_INVALID_URL;
@@ -1201,7 +1241,7 @@ public:
 
                     //COUNT_HEADER_SIZE(p - start);
                     nread += (p - start);
-                    if (nread > (HTTPConfig.MaxHeaderSize))
+                    if (nread > _maxHeaderSize)
                     {
                         http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;
                         goto error;
@@ -1336,7 +1376,7 @@ public:
                             state = HTTPParserState.s_header_almost_done;
                             //COUNT_HEADER_SIZE(p - start);
                             nread += (p - start);
-                            if (nread > (HTTPConfig.MaxHeaderSize))
+                            if (nread > _maxHeaderSize)
                             {
                                 http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;
                                 goto error;
@@ -1364,9 +1404,7 @@ public:
 
                                 size_t limit = maxP - p;
 
-                                limit = (
-                                    limit < HTTPConfig.MaxHeaderSize ? limit
-                                    : HTTPConfig.MaxHeaderSize); //MIN(limit, TTPConfig.instance.MaxHeaderSize);
+                                limit = (limit < _maxHeaderSize ? limit : _maxHeaderSize); //MIN(limit, TTPConfig.instance.MaxHeaderSize);
                                 string str = cast(string) data[p .. maxP];
                                 auto p_cr = str.indexOf(CR); // memchr(p, CR, limit);
                                 auto p_lf = str.indexOf(LF); // memchr(p, LF, limit);
@@ -1560,7 +1598,7 @@ public:
 
                     //COUNT_HEADER_SIZE(p - start);
                     nread += (p - start);
-                    if (nread > (HTTPConfig.MaxHeaderSize))
+                    if (nread > _maxHeaderSize)
                     {
                         http_errno = HTTPParserErrno.HPE_HEADER_OVERFLOW;
                         goto error;
@@ -1758,7 +1796,7 @@ public:
                         }
                         else
                         {
-                            if (!http_message_needs_eof())
+                            if (!httpMessageNeedsEof())
                             {
                                 /* Assume content-length 0 - read the next */
                                 state = mixin(NEW_MESSAGE);
@@ -2036,13 +2074,16 @@ private:
 
     bool _skipBody = false;
 
+    uint _maxHeaderSize = 1024;
+
 protected:
     @property type(HTTPParserType ty)
     {
         _type = ty;
     }
 
-    bool http_message_needs_eof()
+    pragma(inline)
+    bool httpMessageNeedsEof()
     {
         if (type == HTTPParserType.HTTP_REQUEST)
         {
@@ -2067,7 +2108,8 @@ protected:
         return true;
     }
 
-    bool http_should_keep_alive()
+    pragma(inline)
+    bool httpShouldKeepAlive()
     {
         if (http_major > 0 && http_minor > 0)
         {
@@ -2086,10 +2128,10 @@ protected:
             }
         }
 
-        return !http_message_needs_eof();
+        return !httpMessageNeedsEof();
     }
 
-    HTTPParserState parse_url_char(HTTPParserState s, ubyte ch)
+    HTTPParserState parseURLchar(HTTPParserState s, ubyte ch)
     {
         if (ch == ' ' || ch == '\r' || ch == '\n')
         {
@@ -2177,8 +2219,7 @@ protected:
                     return HTTPParserState.s_req_server_with_at;
                 }
 
-                if ( /*mixin(IS_USERINFO_CHAR("ch"))*/ IS_USERINFO_CHAR2(ch) || ch == '['
-                        || ch == ']')
+                if (IS_USERINFO_CHAR2(ch) || ch == '[' || ch == ']')
                 {
                     return HTTPParserState.s_req_server;
                 }
@@ -2275,11 +2316,8 @@ protected:
 }
 
 private:
-string IS_USERINFO_CHAR(string c)
-{
-    return "( " ~ IS_ALPHA(c) ~ " || " ~ IS_NUM(c) ~ " || " ~ c ~ " == '%' || " ~ c ~ " == ';' || " ~ c ~ " == ':' || " ~ c ~ " == '&' || " ~ c ~ " == '=' ||  " ~ c ~ " == '+' || " ~ c ~ " == '$' || " ~ c ~ " == ','" ~ c ~ " == '-' || '_' == " ~ c ~ "|| '.' == " ~ c ~ "|| '!' == " ~ c ~ "|| '~' == " ~ c ~ "|| '*' == " ~ c ~ "|| '\'' == " ~ c ~ "|| '(' == " ~ c ~ "|| ')' == " ~ c ~ ")";
-}
 
+pragma(inline,true)
 bool IS_USERINFO_CHAR2(ubyte c)
 {
     bool alpha = mixin(IS_ALPHA("c"));
@@ -2289,6 +2327,11 @@ bool IS_USERINFO_CHAR2(ubyte c)
     bool b2 = (c == '-' || '_' == c || '.' == c || '!' == c || '~' == c || '*' == c
         || '\'' == c || '(' == c || ')' == c);
     return (b2 || b1 || sum || alpha);
+}
+
+string IS_USERINFO_CHAR(string c)
+{
+    return "( " ~ IS_ALPHA(c) ~ " || " ~ IS_NUM(c) ~ " || " ~ c ~ " == '%' || " ~ c ~ " == ';' || " ~ c ~ " == ':' || " ~ c ~ " == '&' || " ~ c ~ " == '=' ||  " ~ c ~ " == '+' || " ~ c ~ " == '$' || " ~ c ~ " == ','" ~ c ~ " == '-' || '_' == " ~ c ~ "|| '.' == " ~ c ~ "|| '!' == " ~ c ~ "|| '~' == " ~ c ~ "|| '*' == " ~ c ~ "|| '\'' == " ~ c ~ "|| '(' == " ~ c ~ "|| ')' == " ~ c ~ ")";
 }
 
 string STRICT_CHECK(string cond)
@@ -2312,18 +2355,13 @@ string IS_ALPHA(string c)
     return "((" ~ c ~ "| 0x20) >= 'a' && (" ~ c ~ " | 0x20) <= 'z')";
 }
 
-/*	bool BIT_AT(ubyte[32] a, ubyte i) {                                                
- return (!!(cast(uint) (a[cast(uint) (i) >> 3] )&                 
- (1 << (cast(uint)i & 7))));}
- bool IS_URL_CHAR(ubyte c) {return (BIT_AT(normal_url_char, c));} */
-
 string IS_URL_CHAR(string c)
 {
     return "(!!(cast(uint) (normal_url_char[cast(uint) (" ~ c ~ ") >> 3] ) &                  
 				(1 << (cast(uint)" ~ c ~ " & 7))))";
 }
 
-enum NEW_MESSAGE = "http_should_keep_alive() ? (type == HTTPParserType.HTTP_REQUEST ? HTTPParserState.s_start_req : HTTPParserState.s_start_res) : HTTPParserState.s_dead";
+enum NEW_MESSAGE = "httpShouldKeepAlive() ? (type == HTTPParserType.HTTP_REQUEST ? HTTPParserState.s_start_req : HTTPParserState.s_start_res) : HTTPParserState.s_dead";
 string CALLBACK_NOTIFY(string code)
 {
     string _s = " {if (_on_" ~ code ~ " != null){
