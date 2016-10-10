@@ -104,7 +104,7 @@ enum HTTPParserErrno
     HPE_UNKNOWN = 32 //"an unknown error occurred")
 }
 
-package:
+//package:
 
 enum CR = '\r';
 enum LF = '\n';
